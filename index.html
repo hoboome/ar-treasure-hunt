@@ -10,17 +10,13 @@ html,body{width:100%;height:100%;background:#111;font-family:-apple-system,Blink
 #root{position:relative;width:100vw;height:100vh;overflow:hidden}
 #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
 #canvas{position:absolute;inset:0;width:100%;height:100%}
-/* HUD */
 #hud{position:absolute;top:14px;left:10px;right:10px;display:flex;justify-content:space-between;pointer-events:none}
-.hc{background:rgba(0,0,0,.6);backdrop-filter:blur(6px);border:.5px solid rgba(255,255,255,.15);border-radius:12px;padding:5px 13px;color:#fff;text-align:center}
+.hc{background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:.5px solid rgba(255,255,255,.15);border-radius:12px;padding:5px 13px;color:#fff;text-align:center}
 .hv{font-size:21px;font-weight:600;line-height:1.2}
 .hl{font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em}
-/* Прицел */
 #aim{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:72px;height:72px;pointer-events:none}
-/* Полоса времени */
 #tbar{position:absolute;bottom:0;left:0;height:3px;background:#1D9E75;transition:width .95s linear,background .4s}
-/* Экраны */
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(0,0,0,.88);padding:28px;text-align:center;z-index:20;backdrop-filter:blur(4px)}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(0,0,0,.88);padding:28px;text-align:center;z-index:20;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .screen h2{color:#fff;font-size:24px;font-weight:600}
 .screen p{color:rgba(255,255,255,.6);font-size:14px;line-height:1.7;max-width:290px}
 .pips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
@@ -29,15 +25,16 @@ html,body{width:100%;height:100%;background:#111;font-family:-apple-system,Blink
 .btn:active{transform:scale(.97)}
 .btn2{background:transparent;color:rgba(255,255,255,.65);border:.5px solid rgba(255,255,255,.22);border-radius:26px;padding:10px 30px;font-size:14px;cursor:pointer}
 #big-score{font-size:42px;font-weight:700;color:#1D9E75}
-/* Вспышка */
 .flash{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:42px;animation:fl .85s forwards;pointer-events:none;z-index:30}
 @keyframes fl{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-85%) scale(1.7)}}
-/* Радар */
 #radar{position:absolute;bottom:66px;right:12px;width:68px;height:68px;border-radius:50%;background:rgba(0,0,0,.55);border:.5px solid rgba(255,255,255,.18);overflow:hidden;pointer-events:none}
 .rdot{position:absolute;width:7px;height:7px;border-radius:50%;transform:translate(-50%,-50%)}
 #rsweep{position:absolute;width:50%;height:50%;top:50%;left:50%;transform-origin:0 100%;background:rgba(29,158,117,.2);animation:sw 3s linear infinite}
 @keyframes sw{to{transform:rotate(360deg)}}
 #hint{position:absolute;bottom:22px;left:0;right:0;text-align:center;color:rgba(255,255,255,.45);font-size:12px;pointer-events:none}
+/* iOS permission screen */
+#s-ios{display:none}
+.ios-icon{font-size:52px}
 </style>
 </head>
 <body>
@@ -45,7 +42,6 @@ html,body{width:100%;height:100%;background:#111;font-family:-apple-system,Blink
   <video id="video" autoplay playsinline muted></video>
   <canvas id="canvas"></canvas>
 
-  <!-- Прицел -->
   <svg id="aim" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
     <g stroke="white" stroke-width="2.5" fill="none" opacity=".8">
       <path d="M9,22 L9,9 L22,9"/>
@@ -73,11 +69,11 @@ html,body{width:100%;height:100%;background:#111;font-family:-apple-system,Blink
   <div id="hint">Наводи прицел на сферу и держи</div>
   <div id="tbar" style="width:100%"></div>
 
-  <!-- ЭКРАНЫ -->
+  <!-- СТАРТ -->
   <div class="screen" id="s-start">
     <div style="font-size:52px">🗺️</div>
     <h2>AR Treasure Hunt</h2>
-    <p>Наводи прицел на сферы с сокровищами — они стоят в пространстве. Держи прицел чтобы собрать!</p>
+    <p>Наводи прицел на сферы — они стоят в 3D пространстве. Держи прицел чтобы собрать!</p>
     <div class="pips">
       <div class="pip">💎</div><div class="pip">⭐</div><div class="pip">🏺</div>
       <div class="pip">🔮</div><div class="pip">🪙</div><div class="pip">📿</div>
@@ -86,6 +82,16 @@ html,body{width:100%;height:100%;background:#111;font-family:-apple-system,Blink
     <button class="btn2" id="btn-demo">Демо (без камеры)</button>
   </div>
 
+  <!-- iOS РАЗРЕШЕНИЕ ГИРОСКОПА — отдельный экран, кнопка вызывает requestPermission -->
+  <div class="screen" id="s-ios">
+    <div class="ios-icon">📡</div>
+    <h2>Разреши гироскоп</h2>
+    <p>На iPhone нужно явно разрешить доступ к датчику движения. Нажми кнопку ниже.</p>
+    <button class="btn" id="btn-ios-gyro">Разрешить гироскоп</button>
+    <button class="btn2" id="btn-ios-skip">Пропустить (без гироскопа)</button>
+  </div>
+
+  <!-- НЕТ КАМЕРЫ -->
   <div class="screen" id="s-nocam" style="display:none">
     <div style="font-size:48px">📵</div>
     <h2 style="color:#fff">Камера недоступна</h2>
@@ -94,6 +100,7 @@ html,body{width:100%;height:100%;background:#111;font-family:-apple-system,Blink
     <button class="btn2" id="btn-retry">Попробовать снова</button>
   </div>
 
+  <!-- ПОБЕДА -->
   <div class="screen" id="s-win" style="display:none">
     <div style="font-size:52px" id="w-emoji">🏆</div>
     <h2 id="w-title">Победа!</h2>
@@ -104,16 +111,13 @@ html,body{width:100%;height:100%;background:#111;font-family:-apple-system,Blink
 </div>
 
 <script>
-// ─────────────────────────────────────────────
-// КОНФИГ
-// ─────────────────────────────────────────────
-const TOTAL       = 8;
-const DURATION    = 60;
-const LOCK_MS     = 900;    // мс удержания прицела
-const CIRC        = 94.25;  // 2π×15
-const SPREAD_H    = 100;    // горизонтальный охват мира (градусы)
-const SPREAD_V    = 50;     // вертикальный охват
-const FOV_H       = 55;     // угол обзора камеры горизонтальный
+const TOTAL    = 8;
+const DURATION = 60;
+const LOCK_MS  = 900;
+const CIRC     = 94.25;
+const SPREAD_H = 100;
+const SPREAD_V = 50;
+const FOV_H    = 55;
 
 const TYPES = [
   {e:'💎',pts:50,c1:'#b0eeff',c2:'#0090cc',c3:'#004a80'},
@@ -124,200 +128,145 @@ const TYPES = [
   {e:'📿',pts:35,c1:'#c0ffe8',c2:'#20c080',c3:'#006040'},
 ];
 
-// ─────────────────────────────────────────────
-// STATE
-// ─────────────────────────────────────────────
 let items=[], running=false, score=0, found=0, timeLeft=DURATION;
 let animId=null, timerInt=null;
 let lockItem=null, lockStart=0;
-
-// Виртуальная камера — углы в градусах
 let camYaw=0, camPitch=0;
-
-// Гироскоп
-let gyroYaw0=null, gyroPitch0=null;  // начальные значения
-let lastAlpha=null, lastBeta=null;
-
-// Демо-перетаскивание
+let gyroYaw0=null, gyroPitch0=null;
+let gyroActive=false;
 let drag=null;
+let isDemo=false;
 
-// ─────────────────────────────────────────────
-// DOM
-// ─────────────────────────────────────────────
 const video    = document.getElementById('video');
 const canvas   = document.getElementById('canvas');
 const ctx      = canvas.getContext('2d');
 const root     = document.getElementById('root');
 const lockRing = document.getElementById('lock-ring');
 
-function resize(){
-  canvas.width  = root.clientWidth;
-  canvas.height = root.clientHeight;
-}
+function resize(){ canvas.width=root.clientWidth; canvas.height=root.clientHeight; }
 resize();
 window.addEventListener('resize', resize);
 
-// ─────────────────────────────────────────────
-// СПАВН
-// ─────────────────────────────────────────────
+// ── ОПРЕДЕЛЯЕМ iOS ──────────────────────────
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+
+// ── СПАВН ───────────────────────────────────
 function spawn(){
   items=[];
   for(let i=0;i<TOTAL;i++){
     const t=TYPES[Math.floor(Math.random()*TYPES.length)];
-    items.push({
-      ...t,
-      yaw:   (Math.random()-.5)*SPREAD_H,
-      pitch: (Math.random()-.5)*SPREAD_V,
-      phase: Math.random()*Math.PI*2,
-      done:  false, id:i
-    });
+    items.push({...t,
+      yaw:(Math.random()-.5)*SPREAD_H,
+      pitch:(Math.random()-.5)*SPREAD_V,
+      phase:Math.random()*Math.PI*2,
+      done:false,id:i});
   }
-  radar();
+  updateRadar();
 }
 
-// ─────────────────────────────────────────────
-// ПРОЕКЦИЯ угол → пиксель
-// ─────────────────────────────────────────────
-function project(iy, ip){
-  const W=canvas.width, H=canvas.height;
-  const fovV = FOV_H*(H/W);
-  const pph  = W/FOV_H;
-  const ppv  = H/fovV;
+// ── ПРОЕКЦИЯ ────────────────────────────────
+function project(iy,ip){
+  const W=canvas.width,H=canvas.height;
+  const fovV=FOV_H*(H/W);
   return {
-    x: W/2 + (iy - camYaw  )*pph,
-    y: H/2 + (ip - camPitch)*ppv
+    x: W/2+(iy-camYaw)*(W/FOV_H),
+    y: H/2+(ip-camPitch)*(H/fovV)
   };
 }
 
-// ─────────────────────────────────────────────
-// СФЕРА
-// ─────────────────────────────────────────────
+// ── СФЕРА ───────────────────────────────────
 function sphere(sx,sy,r,c1,c2,c3,emoji,a){
-  ctx.save();
-  ctx.globalAlpha=a;
-
+  ctx.save(); ctx.globalAlpha=a;
   // тень
   const sh=ctx.createRadialGradient(sx,sy+r*.9,r*.05,sx,sy+r*.85,r*.75);
   sh.addColorStop(0,'rgba(0,0,0,.3)'); sh.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=sh;
   ctx.beginPath(); ctx.ellipse(sx,sy+r*.92,r*.78,r*.22,0,0,Math.PI*2); ctx.fill();
-
   // тело
   const g=ctx.createRadialGradient(sx-r*.28,sy-r*.28,r*.04,sx,sy,r);
   g.addColorStop(0,c1); g.addColorStop(.55,c2); g.addColorStop(1,c3);
   ctx.fillStyle=g;
   ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2); ctx.fill();
-
   // блик
-  const sh2=ctx.createRadialGradient(sx-r*.3,sy-r*.3,0,sx-r*.15,sy-r*.15,r*.55);
-  sh2.addColorStop(0,'rgba(255,255,255,.85)');
-  sh2.addColorStop(.4,'rgba(255,255,255,.18)');
-  sh2.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=sh2;
+  const bl=ctx.createRadialGradient(sx-r*.3,sy-r*.3,0,sx-r*.15,sy-r*.15,r*.55);
+  bl.addColorStop(0,'rgba(255,255,255,.85)');
+  bl.addColorStop(.4,'rgba(255,255,255,.18)');
+  bl.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=bl;
   ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2); ctx.fill();
-
   // обводка
   ctx.strokeStyle='rgba(255,255,255,.2)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2); ctx.stroke();
-
   // эмодзи
   ctx.globalAlpha=a*.92;
   ctx.font=Math.round(r*.95)+'px sans-serif';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(emoji,sx,sy+r*.07);
-
   ctx.restore();
 }
 
-// ─────────────────────────────────────────────
-// СТРЕЛКА
-// ─────────────────────────────────────────────
-function arrow(tx,ty,color){
-  const W=canvas.width, H=canvas.height;
-  const cx=W/2, cy=H/2;
+// ── СТРЕЛКА ─────────────────────────────────
+function arrowTo(tx,ty,color){
+  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2;
   const angle=Math.atan2(ty-cy,tx-cx);
   const d=Math.min(W,H)/2-46;
   ctx.save();
-  ctx.translate(cx+Math.cos(angle)*d, cy+Math.sin(angle)*d);
-  ctx.rotate(angle);
-  ctx.globalAlpha=.78;
-  ctx.fillStyle=color;
+  ctx.translate(cx+Math.cos(angle)*d,cy+Math.sin(angle)*d);
+  ctx.rotate(angle); ctx.globalAlpha=.78; ctx.fillStyle=color;
   ctx.beginPath();
-  ctx.moveTo(15,0); ctx.lineTo(-8,8); ctx.lineTo(-4,0); ctx.lineTo(-8,-8);
-  ctx.closePath(); ctx.fill();
-  ctx.restore();
+  ctx.moveTo(15,0);ctx.lineTo(-8,8);ctx.lineTo(-4,0);ctx.lineTo(-8,-8);
+  ctx.closePath(); ctx.fill(); ctx.restore();
 }
 
-// ─────────────────────────────────────────────
-// РАДАР
-// ─────────────────────────────────────────────
-function radar(){
+// ── РАДАР ───────────────────────────────────
+function updateRadar(){
   const el=document.getElementById('radar');
-  el.querySelectorAll('.rdot').forEach(e=>e.remove());
+  el.querySelectorAll('.rdot,[data-cam]').forEach(e=>e.remove());
   items.forEach(it=>{
     if(it.done) return;
-    const d=document.createElement('div');
-    d.className='rdot';
-    const rx=50+(it.yaw  /SPREAD_H)*100;
-    const ry=50+(it.pitch/SPREAD_V)*100;
-    d.style.cssText=`left:${Math.max(5,Math.min(95,rx))}%;top:${Math.max(5,Math.min(95,ry))}%;background:${it.c2}`;
+    const d=document.createElement('div'); d.className='rdot';
+    const rx=Math.max(5,Math.min(95, 50+(it.yaw/SPREAD_H)*100));
+    const ry=Math.max(5,Math.min(95, 50+(it.pitch/SPREAD_V)*100));
+    d.style.cssText=`left:${rx}%;top:${ry}%;background:${it.c2}`;
     el.appendChild(d);
   });
-  // позиция игрока
-  const c=document.createElement('div');
-  const px=50+(camYaw  /SPREAD_H)*100;
-  const py=50+(camPitch/SPREAD_V)*100;
-  c.style.cssText=`position:absolute;left:${Math.max(5,Math.min(95,px))}%;top:${Math.max(5,Math.min(95,py))}%;width:7px;height:7px;border-radius:50%;background:#1D9E75;transform:translate(-50%,-50%);z-index:3;border:1.5px solid rgba(255,255,255,.5)`;
+  const c=document.createElement('div'); c.setAttribute('data-cam','1');
+  const px=Math.max(5,Math.min(95,50+(camYaw/SPREAD_H)*100));
+  const py=Math.max(5,Math.min(95,50+(camPitch/SPREAD_V)*100));
+  c.style.cssText=`position:absolute;left:${px}%;top:${py}%;width:7px;height:7px;border-radius:50%;background:#1D9E75;transform:translate(-50%,-50%);z-index:3;border:1.5px solid rgba(255,255,255,.5)`;
   el.appendChild(c);
 }
 
-// ─────────────────────────────────────────────
-// ИГРОВОЙ ЦИКЛ
-// ─────────────────────────────────────────────
+// ── ИГРОВОЙ ЦИКЛ ────────────────────────────
 function loop(ts){
   if(!running) return;
-  const W=canvas.width, H=canvas.height;
-  const cx=W/2, cy=H/2;
+  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2;
   ctx.clearRect(0,0,W,H);
-
-  let nearest=null, nearDist=Infinity;
+  let nearest=null,nearDist=Infinity;
 
   items.forEach(it=>{
     if(it.done) return;
-    const p=project(it.yaw, it.pitch);
+    const p=project(it.yaw,it.pitch);
     const bob=Math.sin(ts*.0009+it.phase)*4;
     const sx=p.x, sy=p.y+bob;
-
-    const R=36; // радиус сферы px
-
-    // fade по краям
-    const fade=Math.min(1, Math.min(sx+80, W-sx+80, sy+80, H-sy+80)/80);
-
-    // рисуем сферу
-    sphere(sx,sy,R, it.c1,it.c2,it.c3, it.e, Math.max(0,fade));
-
-    // очки
+    const R=36;
+    const fade=Math.min(1,Math.min(sx+80,W-sx+80,sy+80,H-sy+80)/80);
+    sphere(sx,sy,R,it.c1,it.c2,it.c3,it.e,Math.max(0,fade));
     const dist=Math.hypot(sx-cx,sy-cy);
     if(dist<110){
       ctx.save();
       ctx.globalAlpha=Math.max(0,1-dist/110)*Math.max(0,fade);
       ctx.font='13px -apple-system,sans-serif';
-      ctx.fillStyle='#fff';
-      ctx.textAlign='center';
-      ctx.fillText('+'+it.pts, sx, sy-R-10);
+      ctx.fillStyle='#fff'; ctx.textAlign='center';
+      ctx.fillText('+'+it.pts,sx,sy-R-10);
       ctx.restore();
     }
-
-    // стрелка если за краем
-    if(sx<-20||sx>W+20||sy<-20||sy>H+20){
-      arrow(sx,sy,it.c2);
-    }
-
-    if(dist<nearDist){ nearDist=dist; nearest={it,sx,sy,dist,R}; }
+    if(sx<-20||sx>W+20||sy<-20||sy>H+20) arrowTo(sx,sy,it.c2);
+    if(dist<nearDist){ nearDist=dist; nearest={it,dist,R}; }
   });
 
-  // Прицел — захват
-  const hit = nearest && nearDist < nearest.R+14;
+  const hit=nearest&&nearDist<nearest.R+14;
   if(hit){
     if(lockItem!==nearest.it){ lockItem=nearest.it; lockStart=ts; }
     const prog=Math.min(1,(ts-lockStart)/LOCK_MS);
@@ -330,15 +279,11 @@ function loop(ts){
     lockRing.style.opacity='0';
   }
 
-  // Радар каждые ~200мс
-  if(Math.floor(ts/200)!==Math.floor((ts-16)/200)) radar();
-
+  if(Math.floor(ts/250)!==Math.floor((ts-16)/250)) updateRadar();
   animId=requestAnimationFrame(loop);
 }
 
-// ─────────────────────────────────────────────
-// СБОР
-// ─────────────────────────────────────────────
+// ── СБОР ────────────────────────────────────
 function collect(it){
   if(it.done) return;
   it.done=true; lockItem=null;
@@ -351,67 +296,39 @@ function collect(it){
   if(found>=TOTAL) endGame(true);
 }
 
-// ─────────────────────────────────────────────
-// ГИРОСКОП (DeviceOrientation)
-// ─────────────────────────────────────────────
-function startGyro(){
-  function handler(e){
-    if(!running) return;
-    // alpha = компас 0-360, gamma = левый/правый наклон, beta = вперёд/назад
-    const alpha = e.alpha||0;
-    const beta  = e.beta ||0;
-    const gamma = e.gamma||0;
-
-    if(gyroYaw0===null){
-      gyroYaw0   = gamma;
-      gyroPitch0 = beta;
-    }
-
-    // Gamma (-90..90) — поворот телефона влево/вправо
-    // Beta (-180..180) — наклон вперёд/назад
-    camYaw   = -(gamma - gyroYaw0  ) * 1.2;
-    camPitch =  (beta  - gyroPitch0) * 0.8;
-
-    // Ограничиваем
-    camYaw   = Math.max(-SPREAD_H/2, Math.min(SPREAD_H/2, camYaw));
-    camPitch = Math.max(-SPREAD_V/2, Math.min(SPREAD_V/2, camPitch));
-  }
-
-  if(typeof DeviceOrientationEvent!=='undefined'&&
-     typeof DeviceOrientationEvent.requestPermission==='function'){
-    // iOS 13+
-    DeviceOrientationEvent.requestPermission()
-      .then(r=>{ if(r==='granted') window.addEventListener('deviceorientation',handler,true); })
-      .catch(()=>{});
-  } else {
-    window.addEventListener('deviceorientation', handler, true);
-  }
+// ── ГИРОСКОП ─────────────────────────────────
+function gyroHandler(e){
+  if(!running) return;
+  const gamma=e.gamma||0; // лево/право (-90..90)
+  const beta =e.beta ||0; // вперёд/назад (-180..180)
+  if(gyroYaw0===null){ gyroYaw0=gamma; gyroPitch0=beta; }
+  camYaw  =Math.max(-SPREAD_H/2,Math.min(SPREAD_H/2, -(gamma-gyroYaw0)*1.2));
+  camPitch=Math.max(-SPREAD_V/2,Math.min(SPREAD_V/2,  (beta-gyroPitch0)*.8));
 }
 
-// ─────────────────────────────────────────────
-// ДЕМО: перетаскивание
-// ─────────────────────────────────────────────
+function attachGyro(){
+  window.addEventListener('deviceorientation', gyroHandler, true);
+  gyroActive=true;
+}
+
+// ── ДЕМО ПЕРЕТАСКИВАНИЕ ─────────────────────
 function initDrag(){
   function down(x,y){ drag={x,y,yaw:camYaw,pitch:camPitch}; }
   function move(x,y){
     if(!drag||!running) return;
-    camYaw  = drag.yaw   - (x-drag.x)*0.14;
-    camPitch= drag.pitch - (y-drag.y)*0.14;
-    camYaw  = Math.max(-SPREAD_H/2, Math.min(SPREAD_H/2, camYaw));
-    camPitch= Math.max(-SPREAD_V/2, Math.min(SPREAD_V/2, camPitch));
+    camYaw  =Math.max(-SPREAD_H/2,Math.min(SPREAD_H/2, drag.yaw  -(x-drag.x)*.14));
+    camPitch=Math.max(-SPREAD_V/2,Math.min(SPREAD_V/2, drag.pitch-(y-drag.y)*.14));
   }
   function up(){ drag=null; }
-  canvas.addEventListener('touchstart', e=>{ e.preventDefault(); down(e.touches[0].clientX,e.touches[0].clientY); },{passive:false});
-  canvas.addEventListener('touchmove',  e=>{ e.preventDefault(); move(e.touches[0].clientX,e.touches[0].clientY); },{passive:false});
-  canvas.addEventListener('touchend',   e=>{ e.preventDefault(); up(); },{passive:false});
-  canvas.addEventListener('mousedown',  e=>down(e.clientX,e.clientY));
-  canvas.addEventListener('mousemove',  e=>move(e.clientX,e.clientY));
-  canvas.addEventListener('mouseup',    up);
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();down(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+  canvas.addEventListener('touchmove', e=>{e.preventDefault();move(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+  canvas.addEventListener('touchend',  e=>{e.preventDefault();up();},{passive:false});
+  canvas.addEventListener('mousedown', e=>down(e.clientX,e.clientY));
+  canvas.addEventListener('mousemove', e=>move(e.clientX,e.clientY));
+  canvas.addEventListener('mouseup',   up);
 }
 
-// ─────────────────────────────────────────────
-// ТАЙМЕР
-// ─────────────────────────────────────────────
+// ── ТАЙМЕР ──────────────────────────────────
 function startTimer(){
   const bar=document.getElementById('tbar');
   timerInt=setInterval(()=>{
@@ -424,76 +341,112 @@ function startTimer(){
   },1000);
 }
 
-// ─────────────────────────────────────────────
-// КОНЕЦ
-// ─────────────────────────────────────────────
+// ── КОНЕЦ ───────────────────────────────────
 function endGame(win){
   running=false;
-  cancelAnimationFrame(animId);
-  clearInterval(timerInt);
+  cancelAnimationFrame(animId); clearInterval(timerInt);
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  document.getElementById('w-emoji').textContent = win?'🏆':'⏰';
-  document.getElementById('w-title').textContent = win?'Победа!':'Время вышло!';
-  document.getElementById('big-score').textContent= score+' очков';
-  document.getElementById('w-stats').textContent  = win
-    ? 'Все '+TOTAL+' найдены! Остаток: '+timeLeft+'с'
-    : 'Найдено '+found+' из '+TOTAL+'. Попробуй ещё!';
+  document.getElementById('w-emoji').textContent=win?'🏆':'⏰';
+  document.getElementById('w-title').textContent=win?'Победа!':'Время вышло!';
+  document.getElementById('big-score').textContent=score+' очков';
+  document.getElementById('w-stats').textContent=win
+    ?'Все '+TOTAL+' найдены! Остаток: '+timeLeft+'с'
+    :'Найдено '+found+' из '+TOTAL+'. Попробуй ещё!';
   document.getElementById('s-win').style.display='flex';
 }
 
-// ─────────────────────────────────────────────
-// СТАРТ
-// ─────────────────────────────────────────────
-async function startGame(demo){
-  cancelAnimationFrame(animId); clearInterval(timerInt);
+// ── ЗАПУСК ИГРЫ (после всех разрешений) ─────
+function launchGame(){
+  ['s-start','s-win','s-nocam','s-ios'].forEach(id=>document.getElementById(id).style.display='none');
   items=[]; found=0; score=0; timeLeft=DURATION;
   running=false; lockItem=null; drag=null;
   camYaw=0; camPitch=0; gyroYaw0=null; gyroPitch0=null;
-
-  ['s-start','s-win','s-nocam'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('h-score').textContent='0';
   document.getElementById('h-found').textContent='0/'+TOTAL;
   document.getElementById('h-time').textContent=DURATION;
   document.getElementById('tbar').style.width='100%';
   document.getElementById('tbar').style.background='#1D9E75';
   resize();
-
-  if(demo){
-    if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
-    video.srcObject=null; video.style.display='none';
-    root.style.background='linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)';
-    document.getElementById('hint').textContent='Тяни пальцем чтобы повернуть камеру';
-    initDrag();
-  } else {
-    try{
-      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
-      video.srcObject=stream; video.style.display='block';
-      root.style.background='#000';
-      document.getElementById('hint').textContent='Поворачивай телефон чтобы искать сокровища';
-      startGyro();
-    }catch(e){
-      video.style.display='none';
-      document.getElementById('s-nocam').style.display='flex';
-      return;
-    }
-  }
-
   spawn();
   running=true;
   requestAnimationFrame(loop);
   startTimer();
 }
 
-// ─────────────────────────────────────────────
-// КНОПКИ
-// ─────────────────────────────────────────────
-document.getElementById('btn-cam'  ).onclick=()=>startGame(false);
-document.getElementById('btn-demo' ).onclick=()=>startGame(true);
-document.getElementById('btn-demo2').onclick=()=>startGame(true);
-document.getElementById('btn-retry').onclick=()=>startGame(false);
-document.getElementById('btn-again').onclick=()=>{
+// ── СТАРТ С КАМЕРОЙ ─────────────────────────
+async function startWithCamera(){
+  // 1. Получаем камеру
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    video.srcObject=stream; video.style.display='block';
+    root.style.background='#000';
+  }catch(e){
+    document.getElementById('s-start').style.display='none';
+    document.getElementById('s-nocam').style.display='flex';
+    return;
+  }
+
+  // 2. iOS — показываем отдельный экран с кнопкой для гироскопа
+  if(isIOS && typeof DeviceOrientationEvent!=='undefined' &&
+     typeof DeviceOrientationEvent.requestPermission==='function'){
+    document.getElementById('s-start').style.display='none';
+    document.getElementById('s-ios').style.display='flex';
+    // Кнопки на iOS-экране обработаны ниже
+    return;
+  }
+
+  // Android / Desktop — гироскоп без разрешения
+  attachGyro();
+  document.getElementById('hint').textContent='Поворачивай телефон чтобы искать сокровища';
+  launchGame();
+}
+
+// ── СТАРТ ДЕМО ──────────────────────────────
+function startDemo(){
   if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
   video.srcObject=null; video.style.display='none';
+  root.style.background='linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)';
+  document.getElementById('hint').textContent='Тяни пальцем чтобы повернуть камеру';
+  isDemo=true;
+  initDrag();
+  launchGame();
+}
+
+// ── КНОПКИ ──────────────────────────────────
+document.getElementById('btn-cam').onclick   = ()=>startWithCamera();
+document.getElementById('btn-demo').onclick  = ()=>startDemo();
+document.getElementById('btn-demo2').onclick = ()=>startDemo();
+document.getElementById('btn-retry').onclick = ()=>startWithCamera();
+
+// iOS экран — кнопка разрешения гироскопа
+document.getElementById('btn-ios-gyro').onclick = ()=>{
+  DeviceOrientationEvent.requestPermission().then(result=>{
+    if(result==='granted'){
+      attachGyro();
+      document.getElementById('hint').textContent='Поворачивай телефон чтобы искать сокровища';
+    } else {
+      document.getElementById('hint').textContent='Тяни пальцем чтобы повернуть камеру';
+      initDrag();
+    }
+    launchGame();
+  }).catch(()=>{
+    initDrag();
+    launchGame();
+  });
+};
+
+// iOS экран — пропустить гироскоп, управлять перетаскиванием
+document.getElementById('btn-ios-skip').onclick = ()=>{
+  document.getElementById('hint').textContent='Тяни пальцем чтобы повернуть камеру';
+  initDrag();
+  launchGame();
+};
+
+document.getElementById('btn-again').onclick = ()=>{
+  if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
+  video.srcObject=null; video.style.display='none';
+  window.removeEventListener('deviceorientation', gyroHandler, true);
+  gyroActive=false; isDemo=false;
   root.style.background='#111';
   document.getElementById('s-win').style.display='none';
   document.getElementById('s-start').style.display='flex';
