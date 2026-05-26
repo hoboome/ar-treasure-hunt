@@ -235,15 +235,16 @@ function spawn(){
 // ═══════════════════════════════════════════════
 function project3D(dir){
   const W=canvas.width, H=canvas.height;
-  // Вращаем направление через кватернион камеры
-  const v = qRotVec(qConj(qCam), dir);
+  // Вращаем мировой вектор в систему координат камеры
+  // qCam описывает куда смотрит камера — применяем обратное вращение к точке мира
+  const v = qRotVec(qCam, dir);
   // v[2] = глубина (вперёд). Если < 0 — за спиной
   if(v[2] <= 0.05) return null;
   const fovH = FOV_DEG * Math.PI/180;
   const fovV = fovH*(H/W);
-  const x = W/2 + (v[0]/v[2]) * (W/(2*Math.tan(fovH/2)));
+  // Камера повернулась вправо → объект смещается влево (минус)
+  const x = W/2 - (v[0]/v[2]) * (W/(2*Math.tan(fovH/2)));
   const y = H/2 - (v[1]/v[2]) * (H/(2*Math.tan(fovV/2)));
-  // Перспективный размер
   const scale = 1/v[2];
   return {x, y, scale, depth:v[2]};
 }
@@ -306,9 +307,8 @@ function drawSphere(sx, sy, r, item, alpha){
 // ═══════════════════════════════════════════════
 function drawArrow(dir, color){
   const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2;
-  const v=qRotVec(qConj(qCam),dir);
-  // Угол на экране
-  const angle=Math.atan2(-v[1],v[0]);
+  const v=qRotVec(qCam,dir);
+  const angle=Math.atan2(-v[1],-v[0]);
   const d=Math.min(W,H)/2-50;
   ctx.save();
   ctx.translate(cx+Math.cos(angle)*d, cy+Math.sin(angle)*d);
